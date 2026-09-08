@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f6f6f4">
+  <title>LuckyBall | Frasco de frases</title>
+  <style>
+    :root { color-scheme: light; --bg:#f6f6f4; --text:#242424; --muted:#777; --border:#dededb; --surface:#fff; --accent:#e8e8e5; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    button,input { font:inherit; }
+    button { -webkit-tap-highlight-color:transparent; }
+    .app { width:100%; max-width:736px; margin:0 auto; padding:32px 20px 40px; }
+    .hero { display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .intro,.result { text-align:center; }
+    .intro { margin:0; font-size:14px; line-height:1.5; color:var(--muted); }
+    .ball { width:min(78vw,360px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 34% 27%,#4a4a4a 0%,#181818 24%,#070707 62%,#000 100%); box-shadow:inset -22px -28px 50px rgba(0,0,0,.65),inset 14px 12px 25px rgba(255,255,255,.08),0 18px 36px rgba(0,0,0,.18); position:relative; border:0; cursor:pointer; touch-action:manipulation; flex-shrink:0; }
+    .ball:focus-visible, .action:focus-visible, input:focus-visible { outline:3px solid #757575; outline-offset:4px; }
+    .window { position:absolute; width:47%; aspect-ratio:1; border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%); background:radial-gradient(circle at 45% 35%,#232323,#050505 72%); border:2px solid #303030; display:flex; align-items:center; justify-content:center; padding:18px; overflow:hidden; }
+    .eight { font:700 clamp(62px,18vw,96px)/1 Georgia,serif; color:#f5f5f5; }
+    .quote { color:#fff; font-size:clamp(13px,3.7vw,17px); line-height:1.35; text-align:center; font-weight:600; opacity:0; transform:scale(.88); transition:opacity .35s ease,transform .35s ease; overflow-wrap:anywhere; }
+    .quote.show { opacity:1; transform:scale(1); }
+    .hidden { display:none!important; }
+    .shake { animation:shakeBall .65s ease-in-out; }
+    @keyframes shakeBall { 0%,100%{transform:translate(0) rotate(0)} 15%{transform:translate(-8px,2px) rotate(-3deg)} 30%{transform:translate(7px,-4px) rotate(3deg)} 45%{transform:translate(-6px,-2px) rotate(-2deg)} 60%{transform:translate(7px,3px) rotate(2deg)} 75%{transform:translate(-3px,-3px) rotate(-1deg)} }
+    .result { min-height:45px; }
+    .instruction { margin:0; font-weight:600; line-height:1.5; }
+    .counter { margin:4px 0 0; font-size:14px; color:var(--muted); }
+    .editor { margin-top:28px; border-top:1px solid var(--border); padding-top:20px; }
+    .add-row { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
+    .field { flex:1; min-width:220px; }
+    .field label { display:block; font-size:14px; font-weight:600; margin-bottom:8px; }
+    input { width:100%; min-height:44px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--text); padding:12px 16px; font-size:16px; }
+    input::placeholder { color:#999; }
+    .action { min-height:44px; border-radius:12px; padding:12px 20px; font-size:14px; font-weight:600; cursor:pointer; border:1px solid transparent; color:var(--text); }
+    .action.primary { background:var(--accent); }
+    .action.secondary { background:transparent; border-color:var(--border); }
+    .action:hover { filter:brightness(.97); }
+    .form-msg { min-height:20px; margin:8px 0 0; font-size:14px; line-height:1.5; color:var(--muted); }
+    .round-row { margin-top:20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .round-label { margin:0; font-size:14px; font-weight:600; }
+    .stats { margin:4px 0 0; font-size:14px; line-height:1.5; color:var(--muted); }
+    @media(max-width:420px) { .app { padding:24px 16px 32px; } .ball { width:min(82vw,340px); } .window { padding:12px; } .add-row { flex-direction:column; align-items:stretch; } .field { width:100%; min-width:0; } .round-row { align-items:flex-start; } }
+    @media(prefers-reduced-motion:reduce) { .shake { animation:none; } .quote { transition:none; } }
+  </style>
+</head>
+<body>
+  <main id="aaron-eightball" class="app">
+    <section class="hero" aria-label="Frasco de frases">
+      <p class="intro">Tu frase de hoy está en algún lugar del frasco.</p>
+      <button id="ballBtn" type="button" class="ball" aria-label="Sacar una frase al azar">
+        <span class="window">
+          <span id="eight" class="eight">8</span>
+          <span id="quote" class="quote hidden" aria-live="polite"></span>
+        </span>
+      </button>
+      <div class="result">
+        <p id="instruction" class="instruction">Toca la bola para sacar una frase</p>
+        <p id="counter" class="counter"></p>
+      </div>
+    </section>
+    <section class="editor" aria-label="Administrar frases">
+      <div class="add-row">
+        <div class="field">
+          <label for="newPhrase">Agregar una frase</label>
+          <input id="newPhrase" type="text" maxlength="220" placeholder="Escribe algo que quieras recordar…" autocomplete="off">
+        </div>
+        <button id="addBtn" type="button" class="action primary">Agregar</button>
+      </div>
+      <p id="formMsg" class="form-msg" aria-live="polite"></p>
+      <div class="round-row">
+        <div>
+          <p class="round-label">Ronda actual</p>
+          <p id="stats" class="stats"></p>
+        </div>
+        <button id="resetBtn" type="button" class="action secondary">Reiniciar ronda</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const root = document.getElementById('aaron-eightball');
+      if (!root || root.dataset.ready === '1') return;
+      root.dataset.ready = '1';
+
+      // Sustituye este valor después de desplegar Code.gs como aplicación web.
+      const API_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+      const API_TIMEOUT_MS = 20000;
+      let busy = false;
+
+      const ball = root.querySelector('#ballBtn');
+      const eight = root.querySelector('#eight');
+      const quote = root.querySelector('#quote');
+      const counter = root.querySelector('#counter');
+      const instruction = root.querySelector('#instruction');
+      const input = root.querySelector('#newPhrase');
+      const add = root.querySelector('#addBtn');
+      const reset = root.querySelector('#resetBtn');
+      const msg = root.querySelector('#formMsg');
+      const stats = root.querySelector('#stats');
+
+      function isConfigured() {
+        return API_URL.startsWith('https://script.google.com/macros/s/') && API_URL.endsWith('/exec');
+      }
+
+      function isAppsScriptOrigin(origin) {
+        try {
+          const url = new URL(origin);
+          return url.protocol === 'https:' &&
+            (url.hostname === 'script.google.com' || url.hostname.endsWith('.googleusercontent.com'));
+        } catch {
+          return false;
+        }
+      }
+
+      function api(action, values = {}) {
+        if (!isConfigured()) {
+          return Promise.reject(new Error('Falta configurar la URL de Apps Script en index.html.'));
+        }
+
+        return new Promise((resolve, reject) => {
+          const requestId = crypto.randomUUID ? crypto.randomUUID() :
+            Date.now().toString(36) + Math.random().toString(36).slice(2);
+          const frame = document.createElement('iframe');
+          const form = document.createElement('form');
+          const field = document.createElement('input');
+          const frameName = 'luckyball_' + requestId.replace(/[^a-z0-9]/gi, '');
+
+          frame.name = frameName;
+          frame.hidden = true;
+          form.hidden = true;
+          form.method = 'POST';
+          form.action = API_URL;
+          form.target = frameName;
+          field.type = 'hidden';
+          field.name = 'payload';
+          field.value = JSON.stringify({
+            action,
+            requestId,
+            origin: window.location.origin,
+            ...values
+          });
+          form.appendChild(field);
+
+          const cleanup = () => {
+            clearTimeout(timer);
+            window.removeEventListener('message', onMessage);
+            form.remove();
+            frame.remove();
+          };
+          const onMessage = event => {
+            if (event.source !== frame.contentWindow || !isAppsScriptOrigin(event.origin)) return;
+            const response = event.data;
+            if (!response || response.requestId !== requestId) return;
+            cleanup();
+            if (response.ok) resolve(response.data);
+            else reject(new Error(response.error?.message || 'No se pudo completar la operación.'));
+          };
+          const timer = setTimeout(() => {
+            cleanup();
+            reject(new Error('La respuesta tardó demasiado. Intenta de nuevo.'));
+          }, API_TIMEOUT_MS);
+
+          window.addEventListener('message', onMessage);
+          document.body.append(frame, form);
+          form.submit();
+        });
+      }
+
+      function setBusy(value) {
+        busy = value;
+        ball.disabled = value;
+        add.disabled = value;
+        reset.disabled = value;
+        input.disabled = value;
+      }
+
+      function update(data) {
+        const state = data.stats || data;
+        counter.textContent = state.available + ' ' +
+          (state.available === 1 ? 'frase restante' : 'frases restantes') +
+          ' en esta ronda';
+        stats.textContent = state.available + ' disponibles · ' +
+          state.used + ' usadas · ' + state.total + ' en total';
+      }
+
+      async function loadState() {
+        try {
+          setBusy(true);
+          const state = await api('state');
+          update(state);
+          msg.textContent = '';
+        } catch (error) {
+          counter.textContent = '';
+          stats.textContent = 'No se pudo conectar con el frasco.';
+          msg.textContent = error.message;
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      async function draw() {
+        if (busy) return;
+        setBusy(true);
+        msg.textContent = '';
+        quote.classList.remove('show');
+        ball.classList.remove('shake');
+        void ball.offsetWidth;
+        ball.classList.add('shake');
+        instruction.textContent = 'Buscando entre los papelitos…';
+
+        try {
+          const [result] = await Promise.all([
+            api('draw'),
+            new Promise(resolve => setTimeout(resolve, 650))
+          ]);
+          eight.classList.add('hidden');
+          quote.textContent = '“' + result.phrase.text + '”';
+          quote.classList.remove('hidden');
+          requestAnimationFrame(() => quote.classList.add('show'));
+          instruction.textContent = result.stats.available === 0
+            ? 'Última frase de la ronda. La próxima inicia una nueva.'
+            : 'Toca otra vez cuando quieras';
+          update(result);
+        } catch (error) {
+          instruction.textContent = 'No se pudo sacar una frase';
+          msg.textContent = error.message;
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      async function addPhrase() {
+        if (busy) return;
+        const text = input.value.trim().replace(/\s+/g, ' ');
+        if (!text) {
+          msg.textContent = 'Escribe una frase primero.';
+          input.focus();
+          return;
+        }
+        if (text.length > 220) {
+          msg.textContent = 'La frase es demasiado larga.';
+          return;
+        }
+
+        try {
+          setBusy(true);
+          const result = await api('add', { text });
+          input.value = '';
+          msg.textContent = 'Añadida al frasco disponible. Puede salir en esta misma ronda.';
+          update(result);
+        } catch (error) {
+          msg.textContent = error.message;
+        } finally {
+          setBusy(false);
+          input.focus();
+        }
+      }
+
+      async function resetRound() {
+        if (busy) return;
+        try {
+          setBusy(true);
+          const result = await api('reset');
+          eight.classList.remove('hidden');
+          quote.classList.add('hidden');
+          quote.classList.remove('show');
+          quote.textContent = '';
+          instruction.textContent = 'Ronda reiniciada. Toca la bola para sacar una frase';
+          msg.textContent = '';
+          update(result);
+        } catch (error) {
+          msg.textContent = error.message;
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      ball.addEventListener('click', draw);
+      add.addEventListener('click', addPhrase);
+      reset.addEventListener('click', resetRound);
+      input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          addPhrase();
+        }
+      });
+
+      loadState();
+    })();
+  </script>
+</body>
+</html>
+
+
