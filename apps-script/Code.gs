@@ -201,7 +201,7 @@ function responsePage_(payload, targetOrigin) {
     .replace(/\u2029/g, '\\u2029');
   const safeOrigin = JSON.stringify(targetOrigin);
   const html = '<!doctype html><meta charset="utf-8"><script>' +
-    'window.parent.postMessage(' + safePayload + ',' + safeOrigin + ');' +
+    'window.top.postMessage(' + safePayload + ',' + safeOrigin + ');' +
     '</script>';
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
