@@ -150,7 +150,7 @@
             frame.remove();
           };
           const onMessage = event => {
-            if (event.source !== frame.contentWindow || !isAppsScriptOrigin(event.origin)) return;
+            if (!isAppsScriptOrigin(event.origin)) return;
             const response = event.data;
             if (!response || response.requestId !== requestId) return;
             cleanup();
