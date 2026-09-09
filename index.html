@@ -4,77 +4,72 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f6f6f4">
-  <title>LuckyBall | Frasco de frases</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎱</text></svg>">
+  <title>LuckyBall</title>
   <style>
     :root { color-scheme: light; --bg:#f6f6f4; --text:#242424; --muted:#777; --border:#dededb; --surface:#fff; --accent:#e8e8e5; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
     button,input { font:inherit; }
     button { -webkit-tap-highlight-color:transparent; }
-    .app { width:100%; max-width:736px; margin:0 auto; padding:32px 20px 40px; }
-    .hero { display:flex; flex-direction:column; align-items:center; gap:16px; }
-    .intro,.result { text-align:center; }
-    .intro { margin:0; font-size:14px; line-height:1.5; color:var(--muted); }
-    .ball { width:min(78vw,360px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 34% 27%,#4a4a4a 0%,#181818 24%,#070707 62%,#000 100%); box-shadow:inset -22px -28px 50px rgba(0,0,0,.65),inset 14px 12px 25px rgba(255,255,255,.08),0 18px 36px rgba(0,0,0,.18); position:relative; border:0; cursor:pointer; touch-action:manipulation; flex-shrink:0; }
-    .ball:focus-visible, .action:focus-visible, input:focus-visible { outline:3px solid #757575; outline-offset:4px; }
+    .app { width:100%; min-height:100dvh; display:grid; place-items:center; padding:24px; }
+    .hero { display:flex; justify-content:center; align-items:center; width:100%; }
+    .ball-stage { position:relative; width:min(82vw,380px); aspect-ratio:1; }
+    .ball { width:100%; height:100%; border-radius:50%; background:radial-gradient(circle at 34% 27%,#4a4a4a 0%,#181818 24%,#070707 62%,#000 100%); box-shadow:inset -22px -28px 50px rgba(0,0,0,.65),inset 14px 12px 25px rgba(255,255,255,.08),0 18px 36px rgba(0,0,0,.18); position:relative; border:0; cursor:pointer; touch-action:manipulation; display:block; }
+    .ball:focus-visible, .corner-button:focus-visible, .action:focus-visible, input:focus-visible { outline:3px solid #757575; outline-offset:4px; }
+    .ball:disabled { cursor:wait; }
     .window { position:absolute; width:47%; aspect-ratio:1; border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%); background:radial-gradient(circle at 45% 35%,#232323,#050505 72%); border:2px solid #303030; display:flex; align-items:center; justify-content:center; padding:18px; overflow:hidden; }
     .eight { font:700 clamp(62px,18vw,96px)/1 Georgia,serif; color:#f5f5f5; }
     .quote { color:#fff; font-size:clamp(13px,3.7vw,17px); line-height:1.35; text-align:center; font-weight:600; opacity:0; transform:scale(.88); transition:opacity .35s ease,transform .35s ease; overflow-wrap:anywhere; }
     .quote.show { opacity:1; transform:scale(1); }
+    .loader { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.2); border-top-color:#fff; animation:spin .8s linear infinite; }
     .hidden { display:none!important; }
     .shake { animation:shakeBall .65s ease-in-out; }
     @keyframes shakeBall { 0%,100%{transform:translate(0) rotate(0)} 15%{transform:translate(-8px,2px) rotate(-3deg)} 30%{transform:translate(7px,-4px) rotate(3deg)} 45%{transform:translate(-6px,-2px) rotate(-2deg)} 60%{transform:translate(7px,3px) rotate(2deg)} 75%{transform:translate(-3px,-3px) rotate(-1deg)} }
-    .result { min-height:45px; }
-    .instruction { margin:0; font-weight:600; line-height:1.5; }
-    .counter { margin:4px 0 0; font-size:14px; color:var(--muted); }
-    .editor { margin-top:28px; border-top:1px solid var(--border); padding-top:20px; }
-    .add-row { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
-    .field { flex:1; min-width:220px; }
-    .field label { display:block; font-size:14px; font-weight:600; margin-bottom:8px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .corner-button { position:absolute; z-index:5; width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.22); background:rgba(20,20,20,.7); color:#fff; display:grid; place-items:center; padding:0; cursor:pointer; box-shadow:0 5px 14px rgba(0,0,0,.25); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); transition:background .2s ease,transform .2s ease; }
+    .corner-button:hover { background:rgba(45,45,45,.82); }
+    .corner-button:active { transform:scale(.94); }
+    .corner-button:disabled { opacity:.45; cursor:wait; }
+    .add-control { top:7%; right:7%; font-size:24px; line-height:1; }
+    .reset-control { right:7%; bottom:7%; font-size:21px; line-height:1; }
+    .composer { position:absolute; z-index:4; inset:18% 11%; display:flex; flex-direction:column; justify-content:center; gap:12px; padding:22px; border:1px solid rgba(255,255,255,.72); border-radius:24px; background:rgba(250,250,248,.94); box-shadow:0 18px 42px rgba(0,0,0,.34); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+    .composer-actions { display:flex; justify-content:flex-end; gap:8px; }
     input { width:100%; min-height:44px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--text); padding:12px 16px; font-size:16px; }
     input::placeholder { color:#999; }
     .action { min-height:44px; border-radius:12px; padding:12px 20px; font-size:14px; font-weight:600; cursor:pointer; border:1px solid transparent; color:var(--text); }
     .action.primary { background:var(--accent); }
     .action.secondary { background:transparent; border-color:var(--border); }
     .action:hover { filter:brightness(.97); }
-    .form-msg { min-height:20px; margin:8px 0 0; font-size:14px; line-height:1.5; color:var(--muted); }
-    .round-row { margin-top:20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-    .round-label { margin:0; font-size:14px; font-weight:600; }
-    .stats { margin:4px 0 0; font-size:14px; line-height:1.5; color:var(--muted); }
-    @media(max-width:420px) { .app { padding:24px 16px 32px; } .ball { width:min(82vw,340px); } .window { padding:12px; } .add-row { flex-direction:column; align-items:stretch; } .field { width:100%; min-width:0; } .round-row { align-items:flex-start; } }
-    @media(prefers-reduced-motion:reduce) { .shake { animation:none; } .quote { transition:none; } }
+    .form-msg { min-height:20px; margin:0; font-size:13px; line-height:1.4; color:var(--muted); }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media(max-width:420px) { .app { padding:16px; } .ball-stage { width:min(90vw,360px); } .window { padding:12px; } .composer { inset:17% 9%; padding:18px; } .action { padding:11px 15px; } }
+    @media(prefers-reduced-motion:reduce) { .shake { animation:none; } .quote,.corner-button { transition:none; } .loader { animation-duration:1.6s; } }
   </style>
 </head>
 <body>
   <main id="aaron-eightball" class="app">
-    <section class="hero" aria-label="Frasco de frases">
-      <p class="intro">Tu frase de hoy está en algún lugar del frasco.</p>
-      <button id="ballBtn" type="button" class="ball" aria-label="Sacar una frase al azar">
-        <span class="window">
-          <span id="eight" class="eight">8</span>
-          <span id="quote" class="quote hidden" aria-live="polite"></span>
-        </span>
-      </button>
-      <div class="result">
-        <p id="instruction" class="instruction">Toca la bola para sacar una frase</p>
-        <p id="counter" class="counter"></p>
-      </div>
-    </section>
-    <section class="editor" aria-label="Administrar frases">
-      <div class="add-row">
-        <div class="field">
-          <label for="newPhrase">Agregar una frase</label>
-          <input id="newPhrase" type="text" maxlength="220" placeholder="Escribe algo que quieras recordar…" autocomplete="off">
-        </div>
-        <button id="addBtn" type="button" class="action primary">Agregar</button>
-      </div>
-      <p id="formMsg" class="form-msg" aria-live="polite"></p>
-      <div class="round-row">
-        <div>
-          <p class="round-label">Ronda actual</p>
-          <p id="stats" class="stats"></p>
-        </div>
-        <button id="resetBtn" type="button" class="action secondary">Reiniciar ronda</button>
+    <section class="hero" aria-label="LuckyBall">
+      <div class="ball-stage">
+        <button id="ballBtn" type="button" class="ball" aria-label="Sacar una frase al azar">
+          <span class="window">
+            <span id="eight" class="eight">8</span>
+            <span id="loader" class="loader hidden" role="status" aria-label="Cargando frase"></span>
+            <span id="quote" class="quote hidden" aria-live="polite"></span>
+          </span>
+        </button>
+        <button id="openFormBtn" type="button" class="corner-button add-control" aria-label="Agregar una frase" aria-controls="phraseForm" aria-expanded="false" title="Agregar una frase">+</button>
+        <button id="resetBtn" type="button" class="corner-button reset-control" aria-label="Reiniciar ronda" title="Reiniciar ronda">↻</button>
+        <form id="phraseForm" class="composer hidden" aria-label="Agregar una frase">
+          <label class="sr-only" for="newPhrase">Nueva frase</label>
+          <input id="newPhrase" type="text" maxlength="220" placeholder="Escribe una frase…" autocomplete="off">
+          <p id="formMsg" class="form-msg" aria-live="polite"></p>
+          <div class="composer-actions">
+            <button id="cancelBtn" type="button" class="action secondary">Cancelar</button>
+            <button id="saveBtn" type="submit" class="action primary">Guardar</button>
+          </div>
+        </form>
+        <p id="liveStatus" class="sr-only" aria-live="polite"></p>
       </div>
     </section>
   </main>
@@ -91,14 +86,16 @@
 
       const ball = root.querySelector('#ballBtn');
       const eight = root.querySelector('#eight');
+      const loader = root.querySelector('#loader');
       const quote = root.querySelector('#quote');
-      const counter = root.querySelector('#counter');
-      const instruction = root.querySelector('#instruction');
       const input = root.querySelector('#newPhrase');
-      const add = root.querySelector('#addBtn');
+      const openForm = root.querySelector('#openFormBtn');
+      const form = root.querySelector('#phraseForm');
+      const save = root.querySelector('#saveBtn');
+      const cancel = root.querySelector('#cancelBtn');
       const reset = root.querySelector('#resetBtn');
       const msg = root.querySelector('#formMsg');
-      const stats = root.querySelector('#stats');
+      const liveStatus = root.querySelector('#liveStatus');
 
       function isConfigured() {
         return API_URL.startsWith('https://script.google.com/macros/s/') && API_URL.endsWith('/exec');
@@ -171,18 +168,36 @@
       function setBusy(value) {
         busy = value;
         ball.disabled = value;
-        add.disabled = value;
+        openForm.disabled = value;
+        save.disabled = value;
+        cancel.disabled = value;
         reset.disabled = value;
         input.disabled = value;
       }
 
       function update(data) {
         const state = data.stats || data;
-        counter.textContent = state.available + ' ' +
+        const remaining = state.available + ' ' +
           (state.available === 1 ? 'frase restante' : 'frases restantes') +
           ' en esta ronda';
-        stats.textContent = state.available + ' disponibles · ' +
-          state.used + ' usadas · ' + state.total + ' en total';
+        ball.setAttribute('aria-label', 'Sacar una frase al azar. ' + remaining + '.');
+        liveStatus.textContent = remaining;
+      }
+
+      function openComposer() {
+        if (busy) return;
+        form.classList.remove('hidden');
+        openForm.setAttribute('aria-expanded', 'true');
+        msg.textContent = '';
+        requestAnimationFrame(() => input.focus());
+      }
+
+      function closeComposer() {
+        form.classList.add('hidden');
+        openForm.setAttribute('aria-expanded', 'false');
+        input.value = '';
+        msg.textContent = '';
+        openForm.focus();
       }
 
       async function loadState() {
@@ -190,11 +205,8 @@
           setBusy(true);
           const state = await api('state');
           update(state);
-          msg.textContent = '';
         } catch (error) {
-          counter.textContent = '';
-          stats.textContent = 'No se pudo conectar con el frasco.';
-          msg.textContent = error.message;
+          liveStatus.textContent = error.message;
         } finally {
           setBusy(false);
         }
@@ -205,27 +217,27 @@
         setBusy(true);
         msg.textContent = '';
         quote.classList.remove('show');
+        quote.classList.add('hidden');
+        eight.classList.add('hidden');
+        loader.classList.remove('hidden');
         ball.classList.remove('shake');
         void ball.offsetWidth;
         ball.classList.add('shake');
-        instruction.textContent = 'Buscando entre los papelitos…';
 
         try {
           const [result] = await Promise.all([
             api('draw'),
             new Promise(resolve => setTimeout(resolve, 650))
           ]);
-          eight.classList.add('hidden');
+          loader.classList.add('hidden');
           quote.textContent = '“' + result.phrase.text + '”';
           quote.classList.remove('hidden');
           requestAnimationFrame(() => quote.classList.add('show'));
-          instruction.textContent = result.stats.available === 0
-            ? 'Última frase de la ronda. La próxima inicia una nueva.'
-            : 'Toca otra vez cuando quieras';
           update(result);
         } catch (error) {
-          instruction.textContent = 'No se pudo sacar una frase';
-          msg.textContent = error.message;
+          loader.classList.add('hidden');
+          eight.classList.remove('hidden');
+          liveStatus.textContent = error.message;
         } finally {
           setBusy(false);
         }
@@ -247,14 +259,14 @@
         try {
           setBusy(true);
           const result = await api('add', { text });
-          input.value = '';
-          msg.textContent = 'Añadida al frasco disponible. Puede salir en esta misma ronda.';
           update(result);
+          closeComposer();
+          liveStatus.textContent = 'Frase guardada.';
         } catch (error) {
           msg.textContent = error.message;
         } finally {
           setBusy(false);
-          input.focus();
+          if (!form.classList.contains('hidden')) input.focus();
         }
       }
 
@@ -264,27 +276,29 @@
           setBusy(true);
           const result = await api('reset');
           eight.classList.remove('hidden');
+          loader.classList.add('hidden');
           quote.classList.add('hidden');
           quote.classList.remove('show');
           quote.textContent = '';
-          instruction.textContent = 'Ronda reiniciada. Toca la bola para sacar una frase';
-          msg.textContent = '';
           update(result);
+          liveStatus.textContent = 'Ronda reiniciada.';
         } catch (error) {
-          msg.textContent = error.message;
+          liveStatus.textContent = error.message;
         } finally {
           setBusy(false);
         }
       }
 
       ball.addEventListener('click', draw);
-      add.addEventListener('click', addPhrase);
+      openForm.addEventListener('click', openComposer);
+      cancel.addEventListener('click', closeComposer);
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        addPhrase();
+      });
       reset.addEventListener('click', resetRound);
-      input.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          addPhrase();
-        }
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !form.classList.contains('hidden') && !busy) closeComposer();
       });
 
       loadState();
@@ -292,5 +306,3 @@
   </script>
 </body>
 </html>
-
-
