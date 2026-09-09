@@ -266,7 +266,8 @@
           msg.textContent = error.message;
         } finally {
           setBusy(false);
-          if (!form.classList.contains('hidden')) input.focus();
+          if (form.classList.contains('hidden')) openForm.focus();
+          else input.focus();
         }
       }
 
