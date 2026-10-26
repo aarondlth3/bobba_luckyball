@@ -76,7 +76,6 @@ function route_(request) {
 
 function getState_() {
   const spreadsheet = getSpreadsheet_();
-  ensureStructure_(spreadsheet);
   const phrases = readPhrases_(spreadsheet);
   return {
     round: getRound_(spreadsheet),
@@ -86,7 +85,6 @@ function getState_() {
 
 function drawPhrase_() {
   const spreadsheet = getSpreadsheet_();
-  ensureStructure_(spreadsheet);
   let phrases = readPhrases_(spreadsheet);
   const active = phrases.filter(function (phrase) { return phrase.active; });
 
@@ -102,7 +100,7 @@ function drawPhrase_() {
     round += 1;
     setAllActiveAvailable_(spreadsheet, phrases);
     setMeta_(spreadsheet, 'current_round', String(round));
-    phrases = readPhrases_(spreadsheet);
+    phrases.forEach(function (p) { if (p.active) p.status = 'available'; });
     available = phrases.filter(function (phrase) { return phrase.active && phrase.status === 'available'; });
     newRound = true;
   }
@@ -128,7 +126,7 @@ function drawPhrase_() {
   setMeta_(spreadsheet, 'last_phrase_id', picked.id);
   setMeta_(spreadsheet, 'updated_at', now.toISOString());
 
-  phrases = readPhrases_(spreadsheet);
+  picked.status = 'used';
   return {
     phrase: { id: picked.id, text: picked.text },
     round: round,
@@ -145,7 +143,6 @@ function addPhrase_(rawText) {
   }
 
   const spreadsheet = getSpreadsheet_();
-  ensureStructure_(spreadsheet);
   const phrases = readPhrases_(spreadsheet);
   const duplicate = phrases.some(function (phrase) {
     return phrase.active && phrase.text.toLocaleLowerCase() === text.toLocaleLowerCase();
@@ -166,7 +163,6 @@ function addPhrase_(rawText) {
 
 function resetRound_() {
   const spreadsheet = getSpreadsheet_();
-  ensureStructure_(spreadsheet);
   const phrases = readPhrases_(spreadsheet);
   const round = getRound_(spreadsheet) + 1;
   setAllActiveAvailable_(spreadsheet, phrases);
