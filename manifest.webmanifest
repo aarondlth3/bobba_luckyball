@@ -1,0 +1,18 @@
+{
+  "name": "Tarjeta oráculo",
+  "short_name": "Oráculo",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#100f17",
+  "theme_color": "#100f17",
+  "icons": [
+    {
+      "src": "./oracle-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
